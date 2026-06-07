@@ -1,0 +1,43 @@
+resources:
+  jobs:
+    pl_process_emp_data_by_dept:
+      name: pl-process-emp-data-by-dept
+      tasks:
+        - task_key: 01_set_day
+          notebook_task:
+            notebook_path: /Workspace/Users/karnajk1987@gmail.com/worklfows-test/01_get_run_day
+            base_parameters:
+              input_date: "{{job.start_time.iso_datetime}}"
+            source: WORKSPACE
+          existing_cluster_id: 0517-065135-21ows5uq
+        - task_key: chek_day
+          depends_on:
+            - task_key: 01_set_day
+          condition_task:
+            op: EQUAL_TO
+            left: "{{tasks.01_set_day.values.input_day}}"
+            right: Sun
+        - task_key: 02_process_data
+          depends_on:
+            - task_key: chek_day
+              outcome: "true"
+          for_each_task:
+            inputs: '["sales","office"]'
+            task:
+              task_key: 02_process_data_iteration
+              notebook_task:
+                notebook_path: /Workspace/Users/karnajk1987@gmail.com/worklfows-test/02_write_emp_data
+                base_parameters:
+                  dept: "{{input}}"
+                source: WORKSPACE
+              existing_cluster_id: 0517-065135-21ows5uq
+        - task_key: else_condition
+          depends_on:
+            - task_key: chek_day
+              outcome: "false"
+          notebook_task:
+            notebook_path: /Workspace/Users/karnajk1987@gmail.com/worklfows-test/03_else_condition
+            source: WORKSPACE
+          existing_cluster_id: 0517-065135-21ows5uq
+      queue:
+        enabled: true
